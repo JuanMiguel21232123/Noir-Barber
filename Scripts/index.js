@@ -2,7 +2,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const money = (n) => new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n);
 
-const OPEN = 8 * 60, CLOSE = 18 * 60, STEP = 30; // lunes a viernes, 8:00 a 18:00
+const OPEN = 8 * 60, CLOSE = 20 * 60, STEP = 30; // lunes a sábado, 8:00 a 20:00
 let services = [];
 
 const KEY = "noir_my_bookings";
@@ -41,9 +41,9 @@ async function loadSlots() {
     return hint("Selecciona un servicio, un barbero y una fecha para consultar los horarios.");
   }
   const dow = new Date(`${day}T12:00:00`).getDay();
-  if (dow === 0 || dow === 6) {
+  if (dow === 0) {
     t.add(new Option("Sin horarios", ""));
-    return hint("Atendemos de lunes a viernes.");
+    return hint("Atendemos de lunes a sábado.");
   }
   hint("Consultando horarios...");
   let data;
