@@ -67,145 +67,170 @@
           </div>
         </div>
 
-        <!-- DISPONIBILIDAD (pausar reservas) -->
-        <section id="availability-panel" class="availability-panel" data-state="on">
-          <div>
-            <p class="eyebrow">DISPONIBILIDAD</p>
-            <strong id="accepting-title">Recibiendo reservas</strong>
-            <p class="muted-text" id="accepting-text"></p>
-          </div>
-          <button id="accepting-button" class="button button-secondary" type="button">Pausar reservas</button>
-        </section>
+        <!-- NAVEGACIÓN POR CATEGORÍAS -->
+        <nav class="admin-tabs" role="tablist" aria-label="Secciones del panel">
+          <button class="tab-button" type="button" role="tab" data-tab="resumen" aria-selected="true">
+            Resumen
+          </button>
+          <button class="tab-button" type="button" role="tab" data-tab="citas" aria-selected="false">
+            Citas
+            <span id="tab-citas-badge" class="tab-badge" hidden>0</span>
+          </button>
+          <button class="tab-button" type="button" role="tab" data-tab="disponibilidad" aria-selected="false">
+            Disponibilidad
+          </button>
+          <button class="tab-button" type="button" role="tab" data-tab="finanzas" aria-selected="false">
+            Finanzas
+          </button>
+        </nav>
 
-        <!-- SECCIÓN DE INGRESOS (SÓLO VISIBLE PARA BARBEROS O ADMIN) -->
-        <section id="earnings-section" class="earnings-panel" hidden>
-          <div class="panel-heading">
-            <div class="heading-content">
-              <p class="eyebrow">FINANZAS</p>
-              <h2>Mis Ganancias<span>.</span></h2>
-            </div>
-            <div class="earnings-filters">
-              <select id="earnings-filter" class="filter-select">
-                <option value="week">Esta semana</option>
-                <option value="biweekly">Esta quincena</option>
-                <option value="month" selected>Este mes</option>
-                <option value="year">Este año</option>
-              </select>
-            </div>
+        <!-- RESUMEN: indicadores globales + alerta de vencidas -->
+        <div class="tab-panel" data-tab-panel="resumen">
+          <div id="admin-stats" class="stats-grid" aria-label="Resumen de reservas">
+            <article class="stat-card">
+              <span class="stat-label">Total</span>
+              <strong id="stat-total">0</strong>
+              <span class="stat-caption">Reservas registradas</span>
+            </article>
+            <article class="stat-card stat-pending">
+              <span class="stat-label">Pendientes</span>
+              <strong id="stat-pending">0</strong>
+              <span class="stat-caption">Esperan aprobación</span>
+            </article>
+            <article class="stat-card stat-approved">
+              <span class="stat-label">Aprobadas</span>
+              <strong id="stat-approved">0</strong>
+              <span class="stat-caption">Citas aceptadas</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Cerradas</span>
+              <strong id="stat-closed">0</strong>
+              <span class="stat-caption">Rechazadas o canceladas</span>
+            </article>
           </div>
-          <div class="earnings-content">
-            <div class="earnings-card">
-              <span class="earnings-label">Total Acumulado (Citas Completadas)</span>
-              <strong id="total-earnings">$ 0</strong>
-            </div>
-            <div class="earnings-card">
-              <span class="earnings-label">Citas completadas</span>
-              <strong id="earnings-count">0</strong>
-            </div>
-            <div class="earnings-card">
-              <span class="earnings-label">Ticket promedio</span>
-              <strong id="earnings-avg">$ 0</strong>
-            </div>
-          </div>
-          <ul id="earnings-services" class="earnings-services"></ul>
-        </section>
-
-        <!-- INDICADORES GLOBALES (SÓLO PARA ADMIN) -->
-        <div id="admin-stats" class="stats-grid" aria-label="Resumen de reservas">
-          <article class="stat-card">
-            <span class="stat-label">Total</span>
-            <strong id="stat-total">0</strong>
-            <span class="stat-caption">Reservas registradas</span>
-          </article>
-          <article class="stat-card stat-pending">
-            <span class="stat-label">Pendientes</span>
-            <strong id="stat-pending">0</strong>
-            <span class="stat-caption">Esperan aprobación</span>
-          </article>
-          <article class="stat-card stat-approved">
-            <span class="stat-label">Aprobadas</span>
-            <strong id="stat-approved">0</strong>
-            <span class="stat-caption">Citas aceptadas</span>
-          </article>
-          <article class="stat-card">
-            <span class="stat-label">Cerradas</span>
-            <strong id="stat-closed">0</strong>
-            <span class="stat-caption">Rechazadas o canceladas</span>
-          </article>
-        </div>
-
-        <!-- LISTADO DE CITAS -->
-        <section class="bookings-panel">
-          <div class="panel-heading">
-            <div class="heading-content">
-              <p class="eyebrow">GESTIÓN DE CITAS</p>
-              <h2 id="bookings-title">Todas las reservas</h2>
-            </div>
-            <span id="last-updated" class="last-updated">Aún no actualizado</span>
-          </div>
-
-          <div class="toolbar">
-            <div class="form-field search-field">
-              <label for="search-bookings">Buscar</label>
-              <input id="search-bookings" type="search" placeholder="Cliente, teléfono, servicio o barbero">
-            </div>
-            <div class="form-field filter-field">
-              <label for="status-filter">Estado</label>
-              <select id="status-filter">
-                <option value="all">Todos los estados</option>
-                <option value="pending">Pendientes</option>
-                <option value="approved">Aprobadas</option>
-                <option value="completed">Completadas</option>
-                <option value="rejected">Rechazadas</option>
-                <option value="cancelled">Canceladas</option>
-                <option value="overdue">Vencidas sin cerrar</option>
-              </select>
-            </div>
-            <div class="form-field filter-field">
-              <label for="date-filter">Fecha</label>
-              <select id="date-filter">
-                <option value="all">Todas las fechas</option>
-                <option value="today">Hoy</option>
-                <option value="tomorrow">Mañana</option>
-                <option value="week">Esta semana</option>
-              </select>
-            </div>
-          </div>
-
-          <p id="dashboard-message" class="message" role="status" aria-live="polite"></p>
 
           <div id="overdue-alert" class="overdue-alert" hidden>
             <span id="overdue-text"></span>
             <button id="overdue-view" class="button button-outline" type="button">Ver</button>
           </div>
+        </div>
 
-          <div id="loading-state" class="empty-state">
-            <span class="loading-spinner" aria-hidden="true"></span>
-            <p>Cargando reservas...</p>
-          </div>
+        <!-- CITAS: filtros + tabla -->
+        <div class="tab-panel" data-tab-panel="citas" hidden>
+          <section class="bookings-panel">
+            <div class="panel-heading">
+              <div class="heading-content">
+                <p class="eyebrow">GESTIÓN DE CITAS</p>
+                <h2 id="bookings-title">Todas las reservas</h2>
+              </div>
+              <span id="last-updated" class="last-updated">Aún no actualizado</span>
+            </div>
 
-          <div id="empty-state" class="empty-state" hidden>
-            <h3>No hay reservas para mostrar</h3>
-            <p>Prueba con otro filtro o actualiza la información.</p>
-          </div>
+            <div class="toolbar">
+              <div class="form-field search-field">
+                <label for="search-bookings">Buscar</label>
+                <input id="search-bookings" type="search" placeholder="Cliente, teléfono, servicio o barbero">
+              </div>
+              <div class="form-field filter-field">
+                <label for="status-filter">Estado</label>
+                <select id="status-filter">
+                  <option value="all">Todos los estados</option>
+                  <option value="pending">Pendientes</option>
+                  <option value="approved">Aprobadas</option>
+                  <option value="completed">Completadas</option>
+                  <option value="rejected">Rechazadas</option>
+                  <option value="cancelled">Canceladas</option>
+                  <option value="overdue">Vencidas sin cerrar</option>
+                </select>
+              </div>
+              <div class="form-field filter-field">
+                <label for="date-filter">Fecha</label>
+                <select id="date-filter">
+                  <option value="all">Todas las fechas</option>
+                  <option value="today">Hoy</option>
+                  <option value="tomorrow">Mañana</option>
+                  <option value="week">Esta semana</option>
+                </select>
+              </div>
+            </div>
 
-          <div id="bookings-table-wrap" class="table-wrap" hidden>
-            <table>
-              <thead>
-                <tr>
-                  <th>Cita</th>
-                  <th>Cliente</th>
-                  <th>Servicio</th>
-                  <th class="hide-mobile">Barbero</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="bookings-body"></tbody>
-            </table>
-          </div>
-          <p class="table-note">Los cambios de estado se guardan en el servidor.</p>
-        </section>
+            <p id="dashboard-message" class="message" role="status" aria-live="polite"></p>
+
+            <div id="loading-state" class="empty-state">
+              <span class="loading-spinner" aria-hidden="true"></span>
+              <p>Cargando reservas...</p>
+            </div>
+
+            <div id="empty-state" class="empty-state" hidden>
+              <h3>No hay reservas para mostrar</h3>
+              <p>Prueba con otro filtro o actualiza la información.</p>
+            </div>
+
+            <div id="bookings-table-wrap" class="table-wrap" hidden>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cita</th>
+                    <th>Cliente</th>
+                    <th>Servicio</th>
+                    <th class="hide-mobile">Barbero</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="bookings-body"></tbody>
+              </table>
+            </div>
+            <p class="table-note">Los cambios de estado se guardan en el servidor.</p>
+          </section>
+        </div>
+
+        <!-- DISPONIBILIDAD (pausar reservas) -->
+        <div class="tab-panel" data-tab-panel="disponibilidad" hidden>
+          <section id="availability-panel" class="availability-panel" data-state="on">
+            <div>
+              <p class="eyebrow">DISPONIBILIDAD</p>
+              <strong id="accepting-title">Recibiendo reservas</strong>
+              <p class="muted-text" id="accepting-text"></p>
+            </div>
+            <button id="accepting-button" class="button button-secondary" type="button">Pausar reservas</button>
+          </section>
+        </div>
+
+        <!-- SECCIÓN DE INGRESOS -->
+        <div class="tab-panel" data-tab-panel="finanzas" hidden>
+          <section id="earnings-section" class="earnings-panel" hidden>
+            <div class="panel-heading">
+              <div class="heading-content">
+                <p class="eyebrow">FINANZAS</p>
+                <h2>Mis Ganancias<span>.</span></h2>
+              </div>
+              <div class="earnings-filters">
+                <select id="earnings-filter" class="filter-select">
+                  <option value="week">Esta semana</option>
+                  <option value="biweekly">Esta quincena</option>
+                  <option value="month" selected>Este mes</option>
+                  <option value="year">Este año</option>
+                </select>
+              </div>
+            </div>
+            <div class="earnings-content">
+              <div class="earnings-card">
+                <span class="earnings-label">Total Acumulado (Citas Completadas)</span>
+                <strong id="total-earnings">$ 0</strong>
+              </div>
+              <div class="earnings-card">
+                <span class="earnings-label">Citas completadas</span>
+                <strong id="earnings-count">0</strong>
+              </div>
+              <div class="earnings-card">
+                <span class="earnings-label">Ticket promedio</span>
+                <strong id="earnings-avg">$ 0</strong>
+              </div>
+            </div>
+            <ul id="earnings-services" class="earnings-services"></ul>
+          </section>
+        </div>
       </section>
     </main>
 

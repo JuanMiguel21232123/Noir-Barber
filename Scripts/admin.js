@@ -14,6 +14,22 @@ const OVERDUE_ACTIONS = {
 };
 let me = null, bookings = [];
 
+// ---------- pestañas ----------
+const TABS = ["resumen", "citas", "disponibilidad", "finanzas"];
+function setTab(tab) {
+  TABS.forEach((t) => {
+    const btn = document.querySelector(`.tab-button[data-tab="${t}"]`);
+    const panel = document.querySelector(`.tab-panel[data-tab-panel="${t}"]`);
+    const active = t === tab;
+    if (btn) btn.setAttribute("aria-selected", String(active));
+    if (panel) panel.hidden = !active;
+  });
+}
+document.querySelector(".admin-tabs").addEventListener("click", (e) => {
+  const btn = e.target.closest(".tab-button");
+  if (btn) setTab(btn.dataset.tab);
+});
+
 const dayOf = (d) => new Date(d).toLocaleDateString("en-CA", { timeZone: TZ });
 // Cita abierta (pendiente/aprobada) cuya hora de fin ya pasó
 const isOverdue = (b) => ["pending", "approved"].includes(b.status) && +new Date(b.starts_at) + b.duration_min * 60000 < Date.now();
@@ -54,6 +70,7 @@ async function enter(barber) {
   $("welcome-name").innerHTML = `Hola, ${esc(me.name)}<span>.</span>`;
   $("user-role-label").textContent = "BARBERO";
   paintAccepting();
+  setTab("resumen");
   await load();
 }
 
@@ -133,6 +150,10 @@ function render() {
   $("stat-closed").textContent = count("rejected") + count("cancelled");
   earnings();
 
+  const pending = count("pending"), badge = $("tab-citas-badge");
+  badge.hidden = !pending;
+  badge.textContent = pending;
+
   const od = bookings.filter(isOverdue).length;
   $("overdue-alert").hidden = !od;
   $("overdue-text").textContent = `⚠ ${od} ${od === 1 ? "cita ya pasó y sigue abierta" : "citas ya pasaron y siguen abiertas"}. Ciérralas como completadas, rechazadas o canceladas.`;
@@ -179,6 +200,7 @@ $("accepting-button").addEventListener("click", async () => {
 $("overdue-view").addEventListener("click", () => {
   $("status-filter").value = "overdue";
   $("date-filter").value = "all";
+  setTab("citas");
   render();
 });
 
