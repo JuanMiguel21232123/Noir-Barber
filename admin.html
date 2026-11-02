@@ -79,6 +79,9 @@
           <button class="tab-button" type="button" role="tab" data-tab="disponibilidad" aria-selected="false">
             Disponibilidad
           </button>
+          <button class="tab-button" type="button" role="tab" data-tab="horarios" aria-selected="false">
+            Horarios
+          </button>
           <button class="tab-button" type="button" role="tab" data-tab="finanzas" aria-selected="false">
             Finanzas
           </button>
@@ -194,6 +197,29 @@
               <p class="muted-text" id="accepting-text"></p>
             </div>
             <button id="accepting-button" class="button button-secondary" type="button">Pausar reservas</button>
+          </section>
+        </div>
+
+        <!-- HORARIOS: horario semanal de atención, se repite cada semana -->
+        <div class="tab-panel" data-tab-panel="horarios" hidden>
+          <section class="schedule-panel">
+            <div class="panel-heading">
+              <div class="heading-content">
+                <p class="eyebrow">HORARIOS</p>
+                <h2>Tu horario semanal<span>.</span></h2>
+              </div>
+            </div>
+            <div class="schedule-content">
+              <p class="muted-text schedule-intro">
+                Define a qué horas atiendes cada día. Este horario se repite automáticamente todas las semanas;
+                desactiva un día si no trabajas en él.
+              </p>
+              <div id="schedule-days" class="schedule-days"></div>
+              <div class="schedule-actions">
+                <button id="schedule-save-button" class="button button-primary" type="button">Guardar horario</button>
+                <p id="schedule-message" class="message" role="status" aria-live="polite"></p>
+              </div>
+            </div>
           </section>
         </div>
 

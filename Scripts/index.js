@@ -2,8 +2,17 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const money = (n) => new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n);
 
-const OPEN = 8 * 60, CLOSE = 20 * 60, STEP = 30; // lunes a sábado, 8:00 a 20:00
+const STEP = 30; // minutos entre horarios disponibles; el rango de horas lo define el horario de cada barbero
 let services = [];
+let barbersList = [];
+
+// "08:00" -> "8:00 a. m." / "14:30" -> "2:30 p. m."
+function formatTime12(hm) {
+  const [h, m] = hm.split(":").map(Number);
+  const period = h < 12 ? "a. m." : "p. m.";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
 
 const KEY = "noir_my_bookings";
 const LABELS = { pending: "Pendiente", approved: "Aprobada", completed: "Completada", rejected: "Rechazada", cancelled: "Cancelada" };
@@ -41,10 +50,16 @@ async function loadSlots() {
     return hint("Selecciona un servicio, un barbero y una fecha para consultar los horarios.");
   }
   const dow = new Date(`${day}T12:00:00`).getDay();
-  if (dow === 0) {
+  const barberObj = barbersList.find((x) => x.id == barber);
+  const daySchedule = barberObj?.schedule?.[String(dow)];
+  if (!daySchedule) {
     t.add(new Option("Sin horarios", ""));
-    return hint("Atendemos de lunes a sábado.");
+    return hint("Este barbero no atiende ese día.");
   }
+  const [openH, openM] = daySchedule.open.split(":").map(Number);
+  const [closeH, closeM] = daySchedule.close.split(":").map(Number);
+  const OPEN = openH * 60 + openM, CLOSE = closeH * 60 + closeM;
+
   hint("Consultando horarios...");
   let data;
   try {
@@ -61,7 +76,7 @@ async function loadSlots() {
     if (start > Date.now() && !taken.some(([a, b]) => start < b && end > a)) free.push(hm);
   }
   t.add(new Option(free.length ? "Selecciona una hora" : "Sin horarios", ""));
-  free.forEach((h) => t.add(new Option(h, h)));
+  free.forEach((h) => t.add(new Option(formatTime12(h), h)));
   t.disabled = !free.length;
   hint(free.length ? `${free.length} horarios disponibles.` : "No hay horarios disponibles ese día.");
 }
@@ -81,7 +96,7 @@ async function loadMine() {
     return `<div class="my-booking">
       <div>
         <strong>${esc(b.service_name)}</strong> con ${esc(b.barber_name)}
-        <span>${d.toLocaleDateString("es-CO", { ...tz, day: "2-digit", month: "short", year: "numeric" })} · ${d.toLocaleTimeString("es-CO", { ...tz, hour: "2-digit", minute: "2-digit" })}</span>
+        <span>${d.toLocaleDateString("es-CO", { ...tz, day: "2-digit", month: "short", year: "numeric" })} · ${d.toLocaleTimeString("es-CO", { ...tz, hour: "numeric", minute: "2-digit", hour12: true })}</span>
       </div>
       <span class="my-status status-${esc(b.status)}">${esc(LABELS[b.status] || b.status)}</span>
       ${can ? `<button class="button button-outline" type="button" data-cancel="${esc(b.id)}">Cancelar</button>` : ""}
@@ -101,6 +116,7 @@ async function init() {
     return;
   }
   services = s;
+  barbersList = b;
   $("services-list").innerHTML = services.map((x) => `
     <article class="service-card">
       <h3>${esc(x.name)}</h3>

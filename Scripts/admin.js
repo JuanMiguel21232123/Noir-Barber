@@ -15,7 +15,7 @@ const OVERDUE_ACTIONS = {
 let me = null, bookings = [];
 
 // ---------- pestañas ----------
-const TABS = ["resumen", "citas", "disponibilidad", "finanzas"];
+const TABS = ["resumen", "citas", "disponibilidad", "finanzas", "horarios"];
 function setTab(tab) {
   TABS.forEach((t) => {
     const btn = document.querySelector(`.tab-button[data-tab="${t}"]`);
@@ -51,6 +51,69 @@ function toast(t) {
 }
 const setMsg = (el, t, state = "info") => { el.textContent = t; el.dataset.state = state; };
 
+// ---------- horario semanal (se reutiliza semana a semana) ----------
+const SCHEDULE_DAYS = [[1, "Lunes"], [2, "Martes"], [3, "Miércoles"], [4, "Jueves"], [5, "Viernes"], [6, "Sábado"], [0, "Domingo"]];
+
+function scheduleRow(dow, label, day) {
+  const open = day ? day.open : "08:00", close = day ? day.close : "20:00";
+  return `<div class="schedule-row" data-dow="${dow}">
+    <label class="schedule-day-toggle">
+      <input type="checkbox" class="schedule-enabled" ${day ? "checked" : ""}>
+      <span>${label}</span>
+    </label>
+    <div class="schedule-times">
+      <input type="time" class="schedule-open" value="${open}" ${day ? "" : "disabled"}>
+      <span class="schedule-sep">a</span>
+      <input type="time" class="schedule-close" value="${close}" ${day ? "" : "disabled"}>
+    </div>
+  </div>`;
+}
+
+function renderSchedule(schedule) {
+  $("schedule-days").innerHTML = SCHEDULE_DAYS.map(([dow, label]) => scheduleRow(dow, label, schedule[String(dow)])).join("");
+}
+
+async function loadSchedule() {
+  setMsg($("schedule-message"), "Cargando horario...");
+  try {
+    const { schedule } = await api("admin/schedule");
+    renderSchedule(schedule);
+    setMsg($("schedule-message"), "");
+  } catch {
+    setMsg($("schedule-message"), "No se pudo cargar tu horario.", "error");
+  }
+}
+
+$("schedule-days").addEventListener("change", (e) => {
+  if (!e.target.classList.contains("schedule-enabled")) return;
+  const row = e.target.closest(".schedule-row"), on = e.target.checked;
+  row.querySelector(".schedule-open").disabled = !on;
+  row.querySelector(".schedule-close").disabled = !on;
+});
+
+$("schedule-save-button").addEventListener("click", async () => {
+  const schedule = {};
+  let valid = true;
+  document.querySelectorAll(".schedule-row").forEach((row) => {
+    const dow = row.dataset.dow, on = row.querySelector(".schedule-enabled").checked;
+    if (!on) { schedule[dow] = null; return; }
+    const open = row.querySelector(".schedule-open").value, close = row.querySelector(".schedule-close").value;
+    if (!open || !close || open >= close) valid = false;
+    schedule[dow] = { open, close };
+  });
+  if (!valid) return setMsg($("schedule-message"), "Revisa que la hora de apertura sea antes que la de cierre en cada día.", "error");
+  const btn = $("schedule-save-button");
+  btn.disabled = true;
+  try {
+    await api("admin/schedule", { method: "PATCH", body: { schedule } });
+    setMsg($("schedule-message"), "Horario guardado. Se repetirá cada semana.", "success");
+    toast("Horario actualizado.");
+  } catch {
+    setMsg($("schedule-message"), "No se pudo guardar el horario.", "error");
+  }
+  btn.disabled = false;
+});
+
 function paintAccepting() {
   const on = me.accepting;
   $("accepting-title").textContent = on ? "Recibiendo reservas" : "Reservas pausadas";
@@ -72,6 +135,7 @@ async function enter(barber) {
   paintAccepting();
   setTab("resumen");
   await load();
+  await loadSchedule();
 }
 
 async function load() {
@@ -116,7 +180,7 @@ function waLink(b) {
   let p = String(b.customer_phone).replace(/\D/g, "");
   if (p.length === 10) p = "57" + p;
   const d = new Date(b.starts_at);
-  const when = `${d.toLocaleDateString("es-CO", { timeZone: TZ, weekday: "long", day: "numeric", month: "long" })} a las ${d.toLocaleTimeString("es-CO", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })}`;
+  const when = `${d.toLocaleDateString("es-CO", { timeZone: TZ, weekday: "long", day: "numeric", month: "long" })} a las ${d.toLocaleTimeString("es-CO", { timeZone: TZ, hour: "numeric", minute: "2-digit", hour12: true })}`;
   const svc = b.service_name || "tu servicio", n = String(b.customer_name).split(" ")[0];
   const t = {
     pending: `Hola ${n}, recibimos tu solicitud de ${svc} para el ${when}. En breve te confirmamos.`,
@@ -133,7 +197,7 @@ function row(b) {
   const buttons = ((late ? OVERDUE_ACTIONS : ACTIONS)[b.status] || []).map(([s, l, c]) => `<button class="action-button ${c}" data-id="${b.id}" data-status="${s}">${l}</button>`).join("");
   const wa = `<a class="action-button action-whatsapp" href="${waLink(b)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`;
   return `<tr${late ? ' class="row-overdue"' : ""}>
-    <td class="booking-date"><strong>${d.toLocaleDateString("es-CO", { ...tz, day: "2-digit", month: "short", year: "numeric" })}</strong><span>${d.toLocaleTimeString("es-CO", { ...tz, hour: "2-digit", minute: "2-digit" })}</span></td>
+    <td class="booking-date"><strong>${d.toLocaleDateString("es-CO", { ...tz, day: "2-digit", month: "short", year: "numeric" })}</strong><span>${d.toLocaleTimeString("es-CO", { ...tz, hour: "numeric", minute: "2-digit", hour12: true })}</span></td>
     <td class="customer-cell"><strong>${esc(b.customer_name)}</strong><span>${esc(b.customer_phone)}</span></td>
     <td class="service-cell"><strong>${esc(b.service_name)}</strong><span>${money(b.price)} · ${b.duration_min} min</span></td>
     <td class="barber-cell hide-mobile">${esc(me.name)}</td>

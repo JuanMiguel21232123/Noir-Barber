@@ -12,7 +12,6 @@
 
 const COOKIE_NAME = "session";
 const SESSION_SECONDS = 60 * 60 * 24 * 7; // 7 días
-const OPEN = 8 * 60, CLOSE = 18 * 60; // horario del negocio en minutos
 
 // ---------- utilidades generales ----------
 
@@ -162,6 +161,57 @@ function dayBoundsBogota(day) {
   return [`${day}T00:00:00-05:00`, `${day}T23:59:59-05:00`];
 }
 
+// ---------- horario semanal de cada barbero (se reutiliza semana a semana) ----------
+// Formato guardado en barbers.schedule (columna TEXT con JSON):
+//   { "0": null, "1": {"open":"08:00","close":"20:00"}, ... "6": {...} }
+// Las llaves son el día de la semana como en Date#getDay() (0 = domingo … 6 = sábado).
+// null / ausente = el barbero no atiende ese día.
+
+const DEFAULT_SCHEDULE = {
+  0: null,
+  1: { open: "08:00", close: "20:00" },
+  2: { open: "08:00", close: "20:00" },
+  3: { open: "08:00", close: "20:00" },
+  4: { open: "08:00", close: "20:00" },
+  5: { open: "08:00", close: "20:00" },
+  6: { open: "08:00", close: "20:00" },
+};
+
+function parseSchedule(raw) {
+  if (!raw) return DEFAULT_SCHEDULE;
+  try {
+    const s = JSON.parse(raw);
+    return s && typeof s === "object" ? s : DEFAULT_SCHEDULE;
+  } catch {
+    return DEFAULT_SCHEDULE;
+  }
+}
+
+// Valida y normaliza un horario enviado por el panel admin antes de guardarlo.
+function validateSchedule(input) {
+  if (!input || typeof input !== "object") return null;
+  const out = {};
+  const timeRe = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  for (const day of ["0", "1", "2", "3", "4", "5", "6"]) {
+    const v = input[day];
+    if (v === null || v === undefined) {
+      out[day] = null;
+      continue;
+    }
+    if (typeof v !== "object" || !timeRe.test(v.open) || !timeRe.test(v.close)) return null;
+    if (v.open >= v.close) return null;
+    out[day] = { open: v.open, close: v.close };
+  }
+  return out;
+}
+
+// Convierte un Date (instante UTC) a los componentes de hora local de Bogotá (UTC-5 fijo),
+// sin depender de la zona horaria del entorno donde corre el worker.
+function bogotaParts(date) {
+  const local = new Date(date.getTime() - 5 * 60 * 60000);
+  return { dow: local.getUTCDay(), minutes: local.getUTCHours() * 60 + local.getUTCMinutes() };
+}
+
 // ============================================================================
 // Router
 // ============================================================================
@@ -181,8 +231,8 @@ export async function onRequest(context) {
     }
 
     if (method === "GET" && path === "barbers") {
-      const r = await tursoOne(env, "SELECT id, name FROM barbers WHERE active = 1 AND accepting = 1 ORDER BY name");
-      return json(r.rows);
+      const r = await tursoOne(env, "SELECT id, name, schedule FROM barbers WHERE active = 1 AND accepting = 1 ORDER BY name");
+      return json(r.rows.map((b) => ({ id: b.id, name: b.name, schedule: parseSchedule(b.schedule) })));
     }
 
     if (method === "GET" && path === "slots") {
@@ -209,6 +259,20 @@ export async function onRequest(context) {
       const startsAt = new Date(start);
       if (isNaN(startsAt.getTime()) || startsAt.getTime() <= Date.now()) return bad("Horario no válido");
       const endsAt = new Date(startsAt.getTime() + svc.duration_min * 60000);
+
+      const barberRowSched = await tursoOne(env, "SELECT schedule FROM barbers WHERE id = ? AND active = 1", [barber]);
+      if (!barberRowSched.rows[0]) return bad("Barbero no válido");
+      const schedule = parseSchedule(barberRowSched.rows[0].schedule);
+      const { dow, minutes } = bogotaParts(startsAt);
+      const day = schedule[String(dow)];
+      if (!day) return bad("Este barbero no atiende ese día.", 409);
+      const [openH, openM] = day.open.split(":").map(Number);
+      const [closeH, closeM] = day.close.split(":").map(Number);
+      const openMin = openH * 60 + openM, closeMin = closeH * 60 + closeM;
+      if (minutes < openMin || minutes + svc.duration_min > closeMin) {
+        return bad("Ese horario está fuera del horario de atención del barbero.", 409);
+      }
+
       const id = crypto.randomUUID();
 
       const r = await tursoOne(
@@ -314,6 +378,20 @@ export async function onRequest(context) {
         const r = await tursoOne(env, "UPDATE barbers SET accepting = ? WHERE id = ?", [accepting ? 1 : 0, barber.id]);
         if (r.affectedRowCount === 0) return bad("No se pudo actualizar", 404);
         return json({ accepting: !!accepting });
+      }
+
+      if (method === "GET" && path === "admin/schedule") {
+        const r = await tursoOne(env, "SELECT schedule FROM barbers WHERE id = ?", [barber.id]);
+        return json({ schedule: parseSchedule(r.rows[0]?.schedule) });
+      }
+
+      if (method === "PATCH" && path === "admin/schedule") {
+        const { schedule } = await request.json().catch(() => ({}));
+        const valid = validateSchedule(schedule);
+        if (!valid) return bad("Horario no válido. Revisa que la hora de apertura sea antes que la de cierre.");
+        const r = await tursoOne(env, "UPDATE barbers SET schedule = ? WHERE id = ?", [JSON.stringify(valid), barber.id]);
+        if (r.affectedRowCount === 0) return bad("No se pudo actualizar", 404);
+        return json({ schedule: valid });
       }
     }
 

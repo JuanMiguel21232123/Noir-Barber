@@ -1033,3 +1033,103 @@ tbody tr:hover {
     font-size: 0.76rem;
   }
 }
+
+/* ==========================================================
+   HORARIO SEMANAL (pestaña Horarios)
+   ========================================================== */
+
+.schedule-panel {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.schedule-content {
+  padding: 26px;
+}
+
+.schedule-intro {
+  margin: 0 0 22px;
+  max-width: 60ch;
+}
+
+.schedule-days {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-light);
+}
+
+.schedule-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.schedule-day-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold);
+}
+
+.schedule-times {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.schedule-times input[type="time"] {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: #111110;
+  color: var(--text);
+}
+
+.schedule-times input[type="time"]:disabled {
+  opacity: 0.4;
+}
+
+.schedule-sep {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.schedule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+@media (max-width: 650px) {
+  .schedule-content {
+    padding: 18px;
+  }
+
+  .schedule-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .schedule-times {
+    width: 100%;
+  }
+
+  .schedule-times input[type="time"] {
+    flex: 1;
+  }
+}
